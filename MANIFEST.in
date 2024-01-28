@@ -1,0 +1,4 @@
+include darcyflowcircle/data/*.npy
+include darcyflowcircle/data/*.npz
+
+
