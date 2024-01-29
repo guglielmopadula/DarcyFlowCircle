@@ -14,6 +14,5 @@ and $$a \sim \mu \text { where } \mu=f\#\mathcal{F}\left(0,(-\Delta+9 I)^{-2}\ri
 3 & x<0
 \end{cases}$$
 
-This system has an unique solution. Note that as $a(x)$ is not continous, the solution is not a strong solution.
-In the dataset class file, some weights useful to compute quadrature formulas are computed.
+This system has an unique solution. As everything is regular, the solution is also a strong solution.
 
