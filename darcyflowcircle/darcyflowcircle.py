@@ -30,3 +30,4 @@ class DarcyFlowCircle():
         self.test_loader=torch.utils.data.DataLoader(self.test_dataset,batch_size=batch_size,shuffle=False)
         self.pod_basis=torch.tensor(np.load(os.path.join(self.data_directory, 'pod_basis.npy')),dtype=torch.float32)
         self.pod_coeff=torch.tensor(np.load(os.path.join(self.data_directory, 'pod_coeff.npy')),dtype=torch.float32)
+        self.triangles=np.load(os.path.join(self.data_directory, 'triangles.npy'))
