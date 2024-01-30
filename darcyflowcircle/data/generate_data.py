@@ -93,7 +93,7 @@ xdmf.write_mesh(domain)
 uh,val,val_grid,grid_points=calculate_simulation(xdmf,0)
 u_data=np.zeros((NUM_SAMPLES,len(uh)))
 val_vec=np.zeros((NUM_SAMPLES,len(uh)))
-val_grid_vec=np.zeros((NUM_SAMPLES,len(val_grid)))
+val_grid_vec=np.zeros((NUM_SAMPLES,256,256))
 val_grid_vec[0]=val_grid
 u_data[0]=uh
 val_vec[0]=val
