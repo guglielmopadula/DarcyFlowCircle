@@ -42,11 +42,6 @@ np.random.seed(0)
 def idct2(A):
     return idct(idct(A, axis=0, norm='ortho'), axis=1, norm='ortho')
 
-def desmooth(u):
-    return 3*(u<0)+12*(u>=0)
-
-def sigmoid(x):
-    return 1/(1+np.exp(-x))
 
 def GRF_sample(points):
     tau=3
@@ -64,8 +59,8 @@ def GRF_sample(points):
     Us=np.reshape(U,(-1,N,N))
     res = map(lambda y: interpolate.interpn(base_points, y, points, method="splinef2d"), Us)
     v=np.vstack(list(res)).astype(np.float64)   
-    v_grid=desmooth(Us)
-    v=desmooth(v)
+    v_grid=np.abs(Us)
+    v=np.abs(v)
     return v,v_grid,base_points
 
 
