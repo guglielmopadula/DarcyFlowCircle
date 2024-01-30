@@ -14,7 +14,7 @@ where
 $$\Omega=\{(x^{2}-0.5)+(y^{2}-0.5)\le 0.45\}$$ 
 
 For generating the training set we choose
-$$a \sim \mu \text { where } \mu=f\#\mathcal{F}\left(0,(-\Delta+9 I)^{-2}\right)$$ and $$f(x)=\begin{cases}
+$$a \sim \mu \text { where } \mu=f \# \mathcal{F}\left(0,(-\Delta+9 I)^{-2}\right)$$ and $$f(x)=\begin{cases}
 12 & x\ge 0\\
 3 & x<0
 \end{cases}$$
