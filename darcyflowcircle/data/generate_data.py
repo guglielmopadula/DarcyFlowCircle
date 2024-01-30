@@ -64,15 +64,16 @@ def GRF_sample(points):
     Us=np.reshape(U,(-1,N,N))
     res = map(lambda y: interpolate.interpn(base_points, y, points, method="splinef2d"), Us)
     v=np.vstack(list(res)).astype(np.float64)   
+    v_grid=desmooth(Us)
     v=desmooth(v)
-    return v
+    return v,v_grid,base_points
 
 
 def calculate_simulation(file,t):
     V = fem.FunctionSpace(domain, ("Lagrange", 1))
     f = 1.0
     k = fem.Function(V)
-    val=GRF_sample(points[:,:2])
+    val,val_grid,grid_points=GRF_sample(points[:,:2])
     k.vector[:]=val
     def on_boundary(x):
         return np.isclose(np.sqrt((x[0]-0.5)**2 + (x[1]-0.5)**2), 0.45)
@@ -87,29 +88,34 @@ def calculate_simulation(file,t):
     file.write_function(uh, t)
     u_val=uh.x.array
     t=t+1
-    return u_val,val
+    return u_val,val,val_grid,grid_points
 
 np.random.seed(0)
 NUM_SAMPLES=600
 xdmf = io.XDMFFile(domain.comm, "diffusion.xdmf", "w")
 xdmf.write_mesh(domain)
 
-uh,val=calculate_simulation(xdmf,0)
+uh,val,val_grid,grid_points=calculate_simulation(xdmf,0)
 u_data=np.zeros((NUM_SAMPLES,len(uh)))
 val_vec=np.zeros((NUM_SAMPLES,len(uh)))
+val_grid_vec=np.zeros((NUM_SAMPLES,len(val_grid)))
+val_grid_vec[0]=val_grid
 u_data[0]=uh
 val_vec[0]=val
 
 for i in trange(1,NUM_SAMPLES):
-    uh,val=calculate_simulation(xdmf,i)
+    uh,val,val_grid,_=calculate_simulation(xdmf,i)
     u_data[i]=uh
     val_vec[i]=val
+    val_grid_vec[i]=val_grid
 points=points[:,:2] 
 xdmf.close()
 np.save("u.npy",u_data)
 np.save("v.npy",val_vec)
 np.save("triangles.npy",triangles)
 np.save("points.npy",points)
+np.save("val_grid.npy",val_grid_vec)
+np.save("grid_points.npy",grid_points)
 
 points=points[:,:2] 
 neigh=[set([]) for i in range(len(points))] 
