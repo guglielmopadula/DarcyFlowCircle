@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from matplotlib.tri import Triangulation
 from scipy.sparse import csr_matrix,save_npz
 import scipy.sparse
+from sklearn import gaussian_process as gp
 gmsh.initialize()
 membrane = gmsh.model.occ.addDisk(0.5, 0.5, 0, 0.45, 0.45)
 gmsh.model.occ.synchronize()
@@ -43,32 +44,38 @@ def idct2(A):
     return idct(idct(A, axis=0, norm='ortho'), axis=1, norm='ortho')
 
 
-def GRF_sample(points):
-    tau=3
-    N=256
-    xi=np.random.normal(0,1,size=(N,N))
-    x = np.linspace(0, 1, num=N)
-    y = np.linspace(0, 1, num=N)
-    xv, yv = np.meshgrid(x, y)
-    alpha=2
-    coef=(np.pi**2*(xv**2+yv**2)+tau**2)**(-alpha/2)
-    L=N*coef*xi
-    L[0,0]=0
-    U=idct2(L)
-    base_points=(x,y)
-    Us=np.reshape(U,(-1,N,N))
-    res = map(lambda y: interpolate.interpn(base_points, y, points, method="splinef2d"), Us)
-    v=np.vstack(list(res)).astype(np.float64)   
-    v_grid=np.abs(Us)
-    v=np.abs(v)
-    return v,v_grid,base_points
 
 
-def calculate_simulation(file,t):
+class GRFSampler():
+    def __init__(self,points):
+        self.N = 100
+        self.points=points[:,:2]
+        self.interp = "splinef2d"
+        self.x = np.linspace(0, 1, num=self.N)
+        self.y = np.linspace(0, 1, num=self.N)
+        xv, yv = np.meshgrid(self.x, self.y)
+        self.X = np.vstack((np.ravel(xv), np.ravel(yv))).T
+        K = gp.kernels.RBF(length_scale=1)
+        self.K = K(self.X)
+        self.L = np.linalg.cholesky(self.K + 1e-12 * np.eye(self.N**2))    
+
+    def sample(self):
+        u = np.random.randn(self.N**2, 1)
+        features=np.dot(self.L, u).T
+        points = (self.x, self.y)
+        ys = np.reshape(features, (-1, self.N, self.N))
+        res = map(lambda y: interpolate.interpn(points, y, self.points, method=self.interp), ys)
+        tmp=np.vstack(list(res)).astype(np.float64).reshape(-1)
+        return (1/2*tmp**2+0.5<1)*(1/2*tmp**2+0.5)+(1/2*tmp**2+0.5>=1)*abs(tmp)
+
+grf=GRFSampler(points)
+
+
+def calculate_simulation(file,t,grf):
     V = fem.FunctionSpace(domain, ("Lagrange", 1))
     f = 1.0
     k = fem.Function(V)
-    val,val_grid,grid_points=GRF_sample(points[:,:2])
+    val=grf.sample()
     k.vector[:]=val
     def on_boundary(x):
         return np.isclose(np.sqrt((x[0]-0.5)**2 + (x[1]-0.5)**2), 0.45)
@@ -83,34 +90,29 @@ def calculate_simulation(file,t):
     file.write_function(uh, t)
     u_val=uh.x.array
     t=t+1
-    return u_val,val,val_grid,grid_points
+    return u_val,val
 
 np.random.seed(0)
 NUM_SAMPLES=600
 xdmf = io.XDMFFile(domain.comm, "diffusion.xdmf", "w")
 xdmf.write_mesh(domain)
 
-uh,val,val_grid,grid_points=calculate_simulation(xdmf,0)
+uh,val=calculate_simulation(xdmf,0,grf)
 u_data=np.zeros((NUM_SAMPLES,len(uh)))
 val_vec=np.zeros((NUM_SAMPLES,len(uh)))
-val_grid_vec=np.zeros((NUM_SAMPLES,256,256))
-val_grid_vec[0]=val_grid
 u_data[0]=uh
 val_vec[0]=val
 
 for i in trange(1,NUM_SAMPLES):
-    uh,val,val_grid,_=calculate_simulation(xdmf,i)
+    uh,val=calculate_simulation(xdmf,i,grf)
     u_data[i]=uh
     val_vec[i]=val
-    val_grid_vec[i]=val_grid
 points=points[:,:2] 
 xdmf.close()
 np.save("u.npy",u_data)
 np.save("v.npy",val_vec)
 np.save("triangles.npy",triangles)
 np.save("points.npy",points)
-np.save("val_grid.npy",val_grid_vec)
-np.save("grid_points.npy",grid_points)
 
 points=points[:,:2] 
 neigh=[set([]) for i in range(len(points))] 
