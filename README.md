@@ -14,7 +14,7 @@ where
 $$\Omega=\{(x^{2}-0.5)+(y^{2}-0.5)\le 0.45\}$$ 
 
 For generating the training set we choose
-$$a \sim \mu \text { where } \mu=f \sharp \mathcal{N}\left(0,C)$$ with
+$$a \sim \mu \text { where } \mu=f \sharp \mathcal{N}(0,C)$$ with
 $$C(x,y)=e^{-||x-y||}$$ 
 and 
 $$f(x)=\begin{cases} -x & x<-1\\
